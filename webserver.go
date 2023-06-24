@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 type PodList struct {
@@ -71,6 +72,18 @@ func listPods() []byte {
 
 }
 
+func filterPodsByStatus(status string, items []PodItem) []PodItem {
+
+	var filtered []PodItem
+
+	for _, item := range items {
+		if strings.Contains(strings.ToLower(item.Status.Name), strings.ToLower(status)) {
+			filtered = append(filtered, item)
+		}
+	}
+	return filtered
+}
+
 func podsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.Error(w, "404 not found.", http.StatusNotFound)
@@ -91,6 +104,7 @@ func podsHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Error parsing JSON:", err)
 		return
 	}
+	podsRunning := filterPodsByStatus("Running", podList.Items)
 
 	for _, pod := range podList.Items {
 		if pod.Status.Name == "Running" {
@@ -99,7 +113,7 @@ func podsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tmpl := template.Must(template.ParseFiles("pods-running-tpl.html"))
-	err = tmpl.Execute(w, podList.Items)
+	err = tmpl.Execute(w, podsRunning)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
