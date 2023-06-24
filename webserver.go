@@ -106,10 +106,9 @@ func podsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	podsRunning := filterPodsByStatus("Running", podList.Items)
 
-	for _, pod := range podList.Items {
-		if pod.Status.Name == "Running" {
-			fmt.Println("Pod Name:", pod.Metadata.Name+" "+pod.Status.Name)
-		}
+	if len(podsRunning) == 0 {
+		http.Error(w, "There are no pods running", http.StatusOK)
+		return
 	}
 
 	tmpl := template.Must(template.ParseFiles("pods-running-tpl.html"))
@@ -128,7 +127,6 @@ func main() {
 	}
 
 	http.HandleFunc("/", podsHandler)
-
 	fmt.Printf("Starting server at port 8080\n")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal(err)
