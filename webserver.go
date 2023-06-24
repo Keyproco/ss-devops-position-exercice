@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"github.com/joho/godotenv"
 	"io/ioutil"
@@ -9,6 +10,29 @@ import (
 	"net/http"
 	"os"
 )
+
+type PodList struct {
+	Kind       string    `json:"kind"`
+	APIVersion string    `json:"apiVersion"`
+	Metadata   Metadata  `json:"metadata"`
+	Items      []PodItem `json:"items"`
+}
+
+type Metadata struct {
+	ResourceVersion string `json:"resourceVersion"`
+}
+
+type PodItem struct {
+	Metadata PodMetadata `json:"metadata"`
+	Status   PodStatus   `json:"status"`
+}
+type PodStatus struct {
+	Name string `json:"phase"`
+}
+
+type PodMetadata struct {
+	Name string `json:"name"`
+}
 
 func listRunningPods() {
 	host := os.Getenv("HOST")
@@ -19,7 +43,7 @@ func listRunningPods() {
 	}
 	client := &http.Client{Transport: tr}
 
-	url := host + "/api/v1/namespaces/devops-apps/pods"
+	url := host + "/api/v1/namespaces/default/pods"
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -42,7 +66,24 @@ func listRunningPods() {
 		return
 	}
 
-	fmt.Println("Response:", string(body))
+	var podList PodList
+	err = json.Unmarshal(body, &podList)
+
+	if err != nil {
+		fmt.Println("Error parsing JSON:", err)
+		return
+	}
+
+	for _, pod := range podList.Items {
+		if pod.Status.Name == "Running" {
+			fmt.Println("Pod Name:", pod.Metadata.Name+" "+pod.Status.Name)
+
+		}
+
+	}
+
+	//fmt.Println("Response:", string(body))
+
 }
 
 func podsHandler(w http.ResponseWriter, r *http.Request) {
@@ -58,7 +99,6 @@ func podsHandler(w http.ResponseWriter, r *http.Request) {
 
 	listRunningPods()
 
-	fmt.Fprintf(w, "Pods everywhere")
 }
 
 func main() {
