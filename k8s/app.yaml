@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ss-pods-reader
+  name: ss-pods-reader
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ss-pods-reader
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: ss-pods-reader
+    spec:
+      serviceAccountName: pods-reader
+      containers:
+        - image: docker.io/keyproco/ss-pods-reader:0.5
+          name: ss-pods-reader
+          ports:
+            - containerPort: 8080
+---
+kind: Service
+metadata:
+  name: ss-pods-reader-service
+  namespace: default
+spec:
+  selector:
+    app: ss-pods-reader
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  namespace: default
+  name: pods-reader
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ss-pod-viewer
+  namespace: default
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ss-viewer-role-binding
+  namespace: default
+subjects:
+  - kind: ServiceAccount
+    name: pods-reader
+    namespace: default
+roleRef:
+  kind: Role
+  name: ss-pod-viewer
+  apiGroup: rbac.authorization.k8s.io
