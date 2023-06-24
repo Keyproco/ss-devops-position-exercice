@@ -1,15 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Items List</title>
+    <title>Pods Running</title>
 </head>
 <body>
-<h1>Items List</h1>
+<h1>Pods List</h1>
 <ul>
     {{range .}}
-    <li>{{.Metadata.Name}} - {{.Status.Name}}</li>
-        {{end}}
-
+        <li>{{.Metadata.Name}}</li>
+    {{end}}
 </ul>
 </body>
 </html>

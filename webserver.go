@@ -38,8 +38,8 @@ type PodMetadata struct {
 
 func listPods() []byte {
 	host := os.Getenv("HOST")
-	token := os.Getenv("TOKEN")
-	// TODO use the token mounted within the pod
+	//token := os.Getenv("TOKEN")
+
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
@@ -53,7 +53,14 @@ func listPods() []byte {
 		return nil
 	}
 
-	req.Header.Set("Authorization", "Bearer "+token)
+	// retrieve token
+	bToken, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/token")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+string(bToken))
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -67,9 +74,6 @@ func listPods() []byte {
 		fmt.Println("Failed to read response body:", err)
 	}
 	return body
-
-	//fmt.Println("Response:", string(body))
-
 }
 
 func filterPodsByStatus(status string, items []PodItem) []PodItem {
@@ -119,6 +123,7 @@ func podsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// /var/run/secrets/kubernetes.io/serviceaccount
 func main() {
 
 	err := godotenv.Load()

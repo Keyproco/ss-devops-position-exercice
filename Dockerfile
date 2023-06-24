@@ -20,7 +20,7 @@ WORKDIR /app
 
 COPY --from=builder /go/bin/ss-pods-reader /app
 COPY --from=builder /src/devops/ss-pods-reader/.env /app
-
+COPY --from=builder /src/devops/ss-pods-reader/pods-running-tpl.html /app
 ENTRYPOINT ["./ss-pods-reader"]
 
 EXPOSE 8080
