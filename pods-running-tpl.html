@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Items List</title>
+</head>
+<body>
+<h1>Items List</h1>
+<ul>
+    {{range .}}
+    <li>{{.Metadata.Name}} - {{.Status.Name}}</li>
+        {{end}}
+
+</ul>
+</body>
+</html>

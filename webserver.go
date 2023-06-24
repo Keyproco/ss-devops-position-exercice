@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/joho/godotenv"
+	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -34,7 +35,7 @@ type PodMetadata struct {
 	Name string `json:"name"`
 }
 
-func listRunningPods() {
+func listPods() []byte {
 	host := os.Getenv("HOST")
 	token := os.Getenv("TOKEN")
 	// TODO use the token mounted within the pod
@@ -48,7 +49,7 @@ func listRunningPods() {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		fmt.Println("Failed to create request:", err)
-		return
+		return nil
 	}
 
 	req.Header.Set("Authorization", "Bearer "+token)
@@ -56,31 +57,15 @@ func listRunningPods() {
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println("Failed to send request:", err)
-		return
+		return nil
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("Failed to read response body:", err)
-		return
 	}
-
-	var podList PodList
-	err = json.Unmarshal(body, &podList)
-
-	if err != nil {
-		fmt.Println("Error parsing JSON:", err)
-		return
-	}
-
-	for _, pod := range podList.Items {
-		if pod.Status.Name == "Running" {
-			fmt.Println("Pod Name:", pod.Metadata.Name+" "+pod.Status.Name)
-
-		}
-
-	}
+	return body
 
 	//fmt.Println("Response:", string(body))
 
@@ -97,8 +82,28 @@ func podsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	listRunningPods()
+	body := listPods()
 
+	var podList PodList
+	err := json.Unmarshal(body, &podList)
+
+	if err != nil {
+		fmt.Println("Error parsing JSON:", err)
+		return
+	}
+
+	for _, pod := range podList.Items {
+		if pod.Status.Name == "Running" {
+			fmt.Println("Pod Name:", pod.Metadata.Name+" "+pod.Status.Name)
+		}
+	}
+
+	tmpl := template.Must(template.ParseFiles("pods-running-tpl.html"))
+	err = tmpl.Execute(w, podList.Items)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func main() {
